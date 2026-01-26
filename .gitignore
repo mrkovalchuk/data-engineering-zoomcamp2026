@@ -1,1 +1,2 @@
 *.parquet
+.terraform.lock.hcl
