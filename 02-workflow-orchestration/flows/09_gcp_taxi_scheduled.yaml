@@ -34,6 +34,7 @@ tasks:
       type: io.kestra.plugin.core.runner.Process
     commands:
       - wget -qO- https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{{inputs.taxi}}/{{render(vars.file)}}.gz | gunzip > {{render(vars.file)}}
+      - echo "Q1 - Uncompressed file size:" && ls -lh {{render(vars.file)}}
 
   - id: upload_to_s3
     type: io.kestra.plugin.aws.s3.Upload
@@ -49,17 +50,17 @@ tasks:
         type: io.kestra.plugin.aws.athena.Query
         query: |
           CREATE TABLE IF NOT EXISTS {{kv('AWS_DATASET')}}.yellow_tripdata (
-              unique_row_id varbinary,
-              filename varchar,
-              VendorID varchar,
+              unique_row_id binary,
+              filename string,
+              VendorID string,
               tpep_pickup_datetime timestamp,
               tpep_dropoff_datetime timestamp,
               passenger_count bigint,
               trip_distance double,
-              RatecodeID varchar,
-              store_and_fwd_flag varchar,
-              PULocationID varchar,
-              DOLocationID varchar,
+              RatecodeID string,
+              store_and_fwd_flag string,
+              PULocationID string,
+              DOLocationID string,
               payment_type bigint,
               fare_amount double,
               extra double,
@@ -150,6 +151,13 @@ tasks:
               INSERT (unique_row_id, filename, VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, RatecodeID, store_and_fwd_flag, PULocationID, DOLocationID, payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount, improvement_surcharge, total_amount, congestion_surcharge)
               VALUES (S.unique_row_id, S.filename, S.VendorID, S.tpep_pickup_datetime, S.tpep_dropoff_datetime, S.passenger_count, S.trip_distance, S.RatecodeID, S.store_and_fwd_flag, S.PULocationID, S.DOLocationID, S.payment_type, S.fare_amount, S.extra, S.mta_tax, S.tip_amount, S.tolls_amount, S.improvement_surcharge, S.total_amount, S.congestion_surcharge)
 
+      - id: athena_yellow_file_count
+        type: io.kestra.plugin.aws.athena.Query
+        query: |
+          SELECT COUNT(*) AS row_count
+          FROM {{kv('AWS_DATASET')}}.yellow_tripdata
+          WHERE filename = '{{render(vars.file)}}'
+
   - id: if_green_taxi
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.taxi == 'green'}}"
@@ -158,15 +166,15 @@ tasks:
         type: io.kestra.plugin.aws.athena.Query
         query: |
           CREATE TABLE IF NOT EXISTS {{kv('AWS_DATASET')}}.green_tripdata (
-              unique_row_id varbinary,
-              filename varchar,
-              VendorID varchar,
+              unique_row_id binary,
+              filename string,
+              VendorID string,
               lpep_pickup_datetime timestamp,
               lpep_dropoff_datetime timestamp,
-              store_and_fwd_flag varchar,
-              RatecodeID varchar,
-              PULocationID varchar,
-              DOLocationID varchar,
+              store_and_fwd_flag string,
+              RatecodeID string,
+              PULocationID string,
+              DOLocationID string,
               passenger_count bigint,
               trip_distance double,
               fare_amount double,
@@ -178,7 +186,7 @@ tasks:
               improvement_surcharge double,
               total_amount double,
               payment_type bigint,
-              trip_type varchar,
+              trip_type string,
               congestion_surcharge double
           )
           PARTITIONED BY (day(lpep_pickup_datetime))
@@ -264,6 +272,13 @@ tasks:
           WHEN NOT MATCHED THEN
               INSERT (unique_row_id, filename, VendorID, lpep_pickup_datetime, lpep_dropoff_datetime, store_and_fwd_flag, RatecodeID, PULocationID, DOLocationID, passenger_count, trip_distance, fare_amount, extra, mta_tax, tip_amount, tolls_amount, ehail_fee, improvement_surcharge, total_amount, payment_type, trip_type, congestion_surcharge)
               VALUES (S.unique_row_id, S.filename, S.VendorID, S.lpep_pickup_datetime, S.lpep_dropoff_datetime, S.store_and_fwd_flag, S.RatecodeID, S.PULocationID, S.DOLocationID, S.passenger_count, S.trip_distance, S.fare_amount, S.extra, S.mta_tax, S.tip_amount, S.tolls_amount, S.ehail_fee, S.improvement_surcharge, S.total_amount, S.payment_type, S.trip_type, S.congestion_surcharge)
+
+      - id: athena_green_file_count
+        type: io.kestra.plugin.aws.athena.Query
+        query: |
+          SELECT COUNT(*) AS row_count
+          FROM {{kv('AWS_DATASET')}}.green_tripdata
+          WHERE filename = '{{render(vars.file)}}'
 
   - id: purge_files
     type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
