@@ -1,23 +1,21 @@
-id: 07_gcp_setup
+id: 07_aws_setup
 namespace: zoomcamp
 
 tasks:
-  - id: create_gcs_bucket
-    type: io.kestra.plugin.gcp.gcs.CreateBucket
-    ifExists: SKIP
-    storageClass: REGIONAL
-    name: "{{kv('GCP_BUCKET_NAME')}}" # make sure it's globally unique!
+  - id: create_s3_bucket
+    type: io.kestra.plugin.aws.s3.CreateBucket
+    bucket: "{{kv('S3_BUCKET_NAME')}}"
 
-  - id: create_bq_dataset
-    type: io.kestra.plugin.gcp.bigquery.CreateDataset
-    name: "{{kv('GCP_DATASET')}}"
-    ifExists: SKIP
+  - id: create_glue_database
+    type: io.kestra.plugin.aws.athena.Query
+    database: default
+    outputLocation: "{{kv('ATHENA_OUTPUT_LOCATION')}}"
+    query: |
+      CREATE DATABASE IF NOT EXISTS {{kv('AWS_DATASET')}}
 
 pluginDefaults:
-  - type: io.kestra.plugin.gcp
+  - type: io.kestra.plugin.aws
     values:
-      serviceAccount: "{{kv('GCP_CREDS')}}"
-      projectId: "{{kv('GCP_PROJECT_ID')}}"
-      location: "{{kv('GCP_LOCATION')}}"
-      bucket: "{{kv('GCP_BUCKET_NAME')}}"
-
+      accessKeyId: "{{kv('AWS_ACCESS_KEY_ID')}}"
+      secretKeyId: "{{kv('AWS_SECRET_ACCESS_KEY')}}"
+      region: "{{kv('AWS_REGION')}}"

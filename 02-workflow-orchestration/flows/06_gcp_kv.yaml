@@ -1,28 +1,37 @@
-id: 06_gcp_kv
+id: 06_aws_kv
 namespace: zoomcamp
+description: |
+  Set up AWS KV pairs for S3 + Athena (Iceberg) workflows.
+  NOTE: You must also set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as
+  secrets via the Kestra UI (Namespace > KV Store) — do NOT put them here.
 
 tasks:
-  - id: gcp_project_id
+  - id: AWS_ACCOUNT_ID
     type: io.kestra.plugin.core.kv.Set
-    key: GCP_PROJECT_ID
+    key: AWS_ACCOUNT_ID
     kvType: STRING
-    value: kestra-sandbox # TODO replace with your project id
+    value: "080432225258"
 
-  - id: gcp_location
+  - id: AWS_REGION
     type: io.kestra.plugin.core.kv.Set
-    key: GCP_LOCATION
+    key: AWS_REGION
     kvType: STRING
-    value: europe-west2
+    value: us-east-1
 
-  - id: gcp_bucket_name
+  - id: S3_BUCKET_NAME
     type: io.kestra.plugin.core.kv.Set
-    key: GCP_BUCKET_NAME
+    key: S3_BUCKET_NAME
     kvType: STRING
-    value: your-name-kestra # TODO make sure it's globally unique!
+    value: kestra-sandbox-zoomcamp
 
-  - id: gcp_dataset
+  - id: AWS_DATASET
     type: io.kestra.plugin.core.kv.Set
-    key: GCP_DATASET
+    key: AWS_DATASET
     kvType: STRING
     value: zoomcamp
 
+  - id: ATHENA_OUTPUT_LOCATION
+    type: io.kestra.plugin.core.kv.Set
+    key: ATHENA_OUTPUT_LOCATION
+    kvType: STRING
+    value: "s3://kestra-sandbox-zoomcamp/athena-results/"
