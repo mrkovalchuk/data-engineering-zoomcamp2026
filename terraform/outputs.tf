@@ -12,3 +12,15 @@ output "athena_output_location" {
   description = "S3 location for Athena query results"
   value       = "s3://${aws_s3_bucket.data_lake.bucket}/athena-results/"
 }
+
+output "dbt_access_key_id" {
+  description = "Access key ID for dbt service account"
+  value       = aws_iam_access_key.dbt.id
+  sensitive   = true
+}
+
+output "dbt_secret_access_key" {
+  description = "Secret access key for dbt service account"
+  value       = aws_iam_access_key.dbt.secret
+  sensitive   = true
+}

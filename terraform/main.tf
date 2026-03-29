@@ -40,3 +40,67 @@ resource "aws_s3_bucket_public_access_block" "data_lake" {
 resource "aws_glue_catalog_database" "dataset" {
   name = var.dataset_name
 }
+
+# --- IAM User for dbt ---
+
+resource "aws_iam_user" "dbt" {
+  name = "dbt-service"
+}
+
+resource "aws_iam_access_key" "dbt" {
+  user = aws_iam_user.dbt.name
+}
+
+resource "aws_iam_user_policy" "dbt" {
+  name = "dbt-data-pipeline"
+  user = aws_iam_user.dbt.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3Access"
+        Effect = "Allow"
+        Action = "s3:*"
+        Resource = [
+          aws_s3_bucket.data_lake.arn,
+          "${aws_s3_bucket.data_lake.arn}/*"
+        ]
+      },
+      {
+        Sid    = "AthenaAccess"
+        Effect = "Allow"
+        Action = [
+          "athena:StartQueryExecution",
+          "athena:StopQueryExecution",
+          "athena:GetQueryExecution",
+          "athena:GetQueryResults",
+          "athena:GetWorkGroup",
+          "athena:ListWorkGroups"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "GlueAccess"
+        Effect = "Allow"
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:CreateDatabase",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:CreateTable",
+          "glue:UpdateTable",
+          "glue:DeleteTable",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:CreatePartition",
+          "glue:BatchCreatePartition",
+          "glue:DeletePartition",
+          "glue:BatchDeletePartition"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
